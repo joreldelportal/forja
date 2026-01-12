@@ -1,0 +1,253 @@
+/* ============================================
+   HOME PAGE - Tab Inicio
+   Simplificado: mensaje + tarjeta CTA + calendario
+   ============================================ */
+
+.container {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #0f0f0f 0%, #0a0a0a 100%);
+  color: #ffffff;
+}
+
+.content {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+/* Loading State */
+.loadingState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  min-height: 60vh;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #22c55e;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loadingState p {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9rem;
+}
+
+/* Error State */
+.errorCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 32px 24px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 16px;
+  text-align: center;
+}
+
+.errorIcon {
+  font-size: 2rem;
+}
+
+.retryBtn {
+  padding: 12px 24px;
+  background: #22c55e;
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ============================================
+   HEADER
+   ============================================ */
+
+.header {
+  text-align: center;
+  padding: 24px 0 32px;
+}
+
+.greeting {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.5);
+  display: block;
+  margin-bottom: 8px;
+}
+
+.title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0 0 8px;
+  line-height: 1.2;
+}
+
+.subtitle {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+}
+
+/* ============================================
+   QUICK STATS
+   ============================================ */
+
+.statsRow {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.statBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+}
+
+.statIcon {
+  font-size: 1rem;
+}
+
+.statValue {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #22c55e;
+}
+
+.statLabel {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* ============================================
+   CTA CARD - Tarjeta Principal
+   ============================================ */
+
+.ctaCard {
+  position: relative;
+  margin-bottom: 32px;
+  cursor: pointer;
+  overflow: hidden;
+  border-radius: 20px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.ctaCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(34, 197, 94, 0.25);
+}
+
+.ctaCard:active {
+  transform: scale(0.98);
+}
+
+.ctaCardContent {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 20px;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.05) 100%);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 20px;
+}
+
+.ctaIconWrapper {
+  flex-shrink: 0;
+}
+
+.ctaIconBg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  border-radius: 16px;
+  font-size: 1.75rem;
+  box-shadow: 0 4px 16px rgba(34, 197, 94, 0.4);
+}
+
+.ctaTextWrapper {
+  flex: 1;
+  min-width: 0;
+}
+
+.ctaTitle {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 4px;
+}
+
+.ctaSubtitle {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+}
+
+.ctaArrow {
+  font-size: 1.5rem;
+  color: #22c55e;
+  opacity: 0.8;
+  transition: transform 0.2s;
+}
+
+.ctaCard:hover .ctaArrow {
+  transform: translateX(4px);
+}
+
+/* Glow effect */
+.ctaGlow {
+  position: absolute;
+  top: -50%;
+  right: -30%;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(34, 197, 94, 0.2) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* ============================================
+   CALENDAR SECTION
+   ============================================ */
+
+.calendarSection {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.sectionTitle {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0 0 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.calendarHint {
+  margin: 16px 0 0;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.4);
+  text-align: center;
+}

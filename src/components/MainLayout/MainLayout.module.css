@@ -1,0 +1,32 @@
+/* ============================================
+   MAIN LAYOUT
+   Container principal con espacio para TabBar
+   ============================================ */
+
+.layout {
+  min-height: 100vh;
+  min-height: 100dvh; /* Dynamic viewport height para móvil */
+  
+  display: flex;
+  flex-direction: column;
+  
+  background: #0a0a0a;
+}
+
+.content {
+  flex: 1;
+  
+  /* Espacio para el TabBar fijo en la parte inferior */
+  padding-bottom: calc(64px + env(safe-area-inset-bottom, 0));
+  
+  /* Scroll suave */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Ajuste para pantallas pequeñas */
+@media (max-width: 360px) {
+  .content {
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0));
+  }
+}

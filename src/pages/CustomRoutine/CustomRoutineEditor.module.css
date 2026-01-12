@@ -1,0 +1,782 @@
+/* ============================================
+   CustomRoutineEditor.module.css
+   Basado en PlanRoutinePreviewPage.module.css
+   Paleta: Verde (#22c55e) + Oscuro (#0a0a0a)
+   ============================================ */
+
+.container {
+  min-height: 100vh;
+  width: 100%;
+  background: linear-gradient(180deg, #0f0f0f 0%, #0a0a0a 100%);
+  padding: 20px;
+  padding-bottom: 100px;
+}
+
+.content {
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.header {
+  margin-bottom: 24px;
+}
+
+.backBtn {
+  background: none;
+  border: none;
+  color: #8892b0;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 8px 0;
+  margin-bottom: 16px;
+}
+
+.backBtn:hover {
+  color: #fff;
+}
+
+.title {
+  color: #fff;
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 12px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.editTitleBtn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.editTitleBtn:hover {
+  opacity: 1;
+}
+
+.titleEdit {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.titleInput {
+  flex: 1;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 600;
+  outline: none;
+}
+
+.titleInput:focus {
+  border-color: #22c55e;
+}
+
+.saveTitleBtn,
+.cancelTitleBtn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.saveTitleBtn {
+  background: #22c55e;
+  color: #000;
+}
+
+.saveTitleBtn:hover:not(:disabled) {
+  background: #16a34a;
+}
+
+.cancelTitleBtn {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.cancelTitleBtn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.metaItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #8892b0;
+  font-size: 13px;
+}
+
+.infoBox {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.infoIcon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.infoBox span:last-child {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* Toggle warmup */
+.warmupToggle {
+  margin-bottom: 16px;
+}
+
+.toggleLabel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.toggleInput {
+  display: none;
+}
+
+.toggleSlider {
+  width: 44px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  position: relative;
+  transition: all 0.2s;
+}
+
+.toggleSlider::after {
+  content: "";
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: #fff;
+  border-radius: 50%;
+  top: 2px;
+  left: 2px;
+  transition: all 0.2s;
+}
+
+.toggleInput:checked + .toggleSlider {
+  background: #22c55e;
+}
+
+.toggleInput:checked + .toggleSlider::after {
+  transform: translateX(20px);
+}
+
+.toggleText {
+  color: #8892b0;
+  font-size: 14px;
+}
+
+/* Banners */
+.errorBanner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.warningBanner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.dismissBtn {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px;
+}
+
+/* Blocks */
+.blocks {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.blockGroup {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.blockGroup.skipped {
+  opacity: 0.5;
+}
+
+.blockHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.blockIcon {
+  font-size: 20px;
+}
+
+.blockTitle {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  flex: 1;
+}
+
+.skippedLabel {
+  color: #8892b0;
+  font-weight: 400;
+  font-size: 13px;
+}
+
+.blockCount {
+  color: #8892b0;
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+.exerciseList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.exerciseItem {
+  display: flex;
+  align-items: stretch;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.2s;
+}
+
+.exerciseItem.editing {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.exerciseItem.expired {
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  background: rgba(251, 191, 36, 0.08);
+}
+
+/* Columna de flechas de reordenamiento */
+.reorderColumn {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.reorderBtn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.reorderBtn:hover:not(:disabled) {
+  background: rgba(34, 197, 94, 0.3);
+  color: #22c55e;
+}
+
+.reorderBtn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.reorderBtn.disabled,
+.reorderBtn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Contenido del ejercicio */
+.exerciseContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.viewMode {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+}
+
+.viewMode:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.exerciseNum {
+  width: 32px;
+  height: 32px;
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.exerciseInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.exerciseName {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.expiredTag {
+  color: #fbbf24;
+  font-size: 12px;
+}
+
+.exerciseDetails {
+  color: #8892b0;
+  font-size: 12px;
+}
+
+.editIcon {
+  color: #8892b0;
+  font-size: 14px;
+}
+
+/* Edit mode */
+.editMode {
+  padding: 16px;
+}
+
+.editHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.exerciseNameEdit {
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.customBadge {
+  background: rgba(139, 92, 246, 0.3);
+  color: #a78bfa;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.editRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  gap: 12px;
+}
+
+.editLabel {
+  color: #8892b0;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.editInputGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.editBtnMinus,
+.editBtnPlus {
+  min-width: 40px;
+  height: 36px;
+  padding: 0 8px;
+  border-radius: 10px;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.editBtnMinus {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+.editBtnMinus:hover {
+  background: rgba(239, 68, 68, 0.3);
+}
+
+.editBtnPlus {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+.editBtnPlus:hover {
+  background: rgba(34, 197, 94, 0.25);
+}
+
+.editValue {
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  min-width: 45px;
+  text-align: center;
+}
+
+.editCalc {
+  color: #8892b0;
+  font-size: 12px;
+  text-align: right;
+  margin-bottom: 12px;
+}
+
+/* Extra actions for custom routines */
+.blockExtraActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 12px;
+  margin-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.replaceBtn,
+.deleteBtn {
+  flex: 1;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.replaceBtn {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+}
+
+.replaceBtn:hover {
+  background: rgba(251, 191, 36, 0.25);
+}
+
+.deleteBtn {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+.deleteBtn:hover {
+  background: rgba(239, 68, 68, 0.25);
+}
+
+/* Actions footer */
+.actions {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, #0a0a0a 0%, rgba(10, 10, 10, 0.95) 100%);
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.primaryBtn {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  color: #000;
+  border: none;
+  padding: 18px 48px;
+  border-radius: 14px;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+  max-width: 400px;
+}
+
+.primaryBtn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(34, 197, 94, 0.4);
+}
+
+.primaryBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.secondaryBtn {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 16px;
+}
+
+.secondaryBtn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Loading */
+.loadingState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  color: #8892b0;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #22c55e;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Modal */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  width: 100%;
+  max-width: 500px;
+  max-height: 80vh;
+  background: linear-gradient(145deg, #1e1e32 0%, #151525 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px 20px 0 0;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.modalTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+}
+
+.modalCloseBtn {
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.modalCloseBtn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.modalSearch {
+  width: 100%;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 15px;
+  outline: none;
+  margin-bottom: 16px;
+}
+
+.modalSearch:focus {
+  border-color: rgba(34, 197, 94, 0.5);
+}
+
+.modalSearch::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.modalLoading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.modalExerciseList {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 50vh;
+}
+
+.exerciseGroup {
+  margin-bottom: 16px;
+}
+
+.groupLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 8px 0;
+  padding: 0 4px;
+}
+
+.exerciseOption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 6px;
+}
+
+.exerciseOption:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.exerciseOption.custom {
+  background: rgba(139, 92, 246, 0.1);
+}
+
+.exerciseOption.custom:hover {
+  border-color: rgba(139, 92, 246, 0.3);
+}
+
+.exerciseOptionName {
+  font-weight: 600;
+}
+
+.noResults {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  padding: 24px;
+}

@@ -1,0 +1,153 @@
+/* ============================================
+   TAB BAR - Navegación inferior
+   Estética deportiva oscura con acentos verdes
+   ============================================ */
+
+.tabBar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  
+  height: 64px;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  
+  background: linear-gradient(180deg, #1a1a1a 0%, #0f0f0f 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  
+  /* Sombra sutil hacia arriba */
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.tab {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  
+  flex: 1;
+  height: 100%;
+  padding: 8px 4px;
+  
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  
+  transition: all 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tab:active {
+  transform: scale(0.95);
+}
+
+.icon {
+  font-size: 1.5rem;
+  line-height: 1;
+  transition: transform 0.2s ease;
+  filter: grayscale(100%) opacity(0.5);
+}
+
+.label {
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.4);
+  transition: all 0.2s ease;
+}
+
+/* ============================================
+   ESTADO ACTIVO - MUY VISIBLE
+   ============================================ */
+
+.tab.active {
+  /* Fondo sutil para el tab activo */
+  background: rgba(34, 197, 94, 0.08);
+  border-radius: 12px 12px 0 0;
+}
+
+.tab.active .icon {
+  transform: scale(1.15);
+  filter: none; /* Quitar grayscale, mostrar color original */
+}
+
+.tab.active .label {
+  color: #22c55e;
+  font-weight: 700;
+  text-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+}
+
+/* Indicador superior - línea verde gruesa con glow */
+.tab.active::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  
+  width: 40px;
+  height: 3px;
+  border-radius: 0 0 3px 3px;
+  
+  background: linear-gradient(90deg, #22c55e 0%, #4ade80 100%);
+  box-shadow: 
+    0 0 10px rgba(34, 197, 94, 0.6),
+    0 0 20px rgba(34, 197, 94, 0.3);
+}
+
+/* Glow sutil debajo del icono activo */
+.tab.active .icon::after {
+  content: "";
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 4px;
+  background: rgba(34, 197, 94, 0.4);
+  filter: blur(4px);
+  border-radius: 50%;
+}
+
+/* ============================================
+   ESTADO INACTIVO
+   ============================================ */
+
+.tab:not(.active):hover .icon {
+  filter: grayscale(50%) opacity(0.7);
+  transform: scale(1.05);
+}
+
+.tab:not(.active):hover .label {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 360px) {
+  .tabBar {
+    height: 56px;
+  }
+  
+  .icon {
+    font-size: 1.3rem;
+  }
+  
+  .label {
+    font-size: 0.65rem;
+  }
+  
+  .tab.active::before {
+    width: 32px;
+    height: 2px;
+  }
+}

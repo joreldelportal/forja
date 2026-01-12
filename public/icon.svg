@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#0a0a0a"/>
+  <g transform="translate(256, 256)">
+    <!-- Dumbbell icon -->
+    <rect x="-140" y="-20" width="280" height="40" rx="8" fill="#22c55e"/>
+    <rect x="-170" y="-60" width="40" height="120" rx="8" fill="#22c55e"/>
+    <rect x="130" y="-60" width="40" height="120" rx="8" fill="#22c55e"/>
+    <rect x="-190" y="-80" width="30" height="160" rx="6" fill="#16a34a"/>
+    <rect x="160" y="-80" width="30" height="160" rx="6" fill="#16a34a"/>
+  </g>
+  <!-- Forja text -->
+  <text x="256" y="420" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="72" font-weight="800" fill="#ffffff">FORJA</text>
+</svg>

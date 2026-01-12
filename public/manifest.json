@@ -1,0 +1,25 @@
+{
+  "name": "Forja - Fitness App",
+  "short_name": "Forja",
+  "description": "Tu app de entrenamiento personal",
+  "start_url": "/forja/",
+  "scope": "/forja/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#22c55e",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/forja/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/forja/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
