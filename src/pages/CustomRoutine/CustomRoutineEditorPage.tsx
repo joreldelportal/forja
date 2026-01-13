@@ -87,8 +87,7 @@ export default function CustomRoutineEditorPage() {
   const [showDiscardModal, setShowDiscardModal] = useState(false);
   const [discarding, setDiscarding] = useState(false);
 
-  // Track unsaved changes & save feedback
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  // Save feedback
   const [showSavedMessage, setShowSavedMessage] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -441,7 +440,6 @@ export default function CustomRoutineEditorPage() {
     
     // Mostrar mensaje de guardado
     setShowSavedMessage(true);
-    setHasUnsavedChanges(false);
     
     // Ocultar mensaje después de 2 segundos
     setTimeout(() => {

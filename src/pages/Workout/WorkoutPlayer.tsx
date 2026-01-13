@@ -294,6 +294,7 @@ export default function WorkoutPlayer({
       updatedAtMs: now,
     };
     
+    console.log("[WorkoutPlayer] Persisting state:", { sessionId, status: currentStatus, stepIndex });
     saveWorkoutSession(sessionId, data);
   }, [sessionId, status, currentStepIndex, skipWarmup, blocks]);
 
@@ -350,13 +351,17 @@ export default function WorkoutPlayer({
 
   // Verificar sesión persistida al montar
   useEffect(() => {
+    console.log("[WorkoutPlayer] Checking for persisted session...", { sessionId, hasChecked: hasCheckedPersistedRef.current });
+    
     if (hasCheckedPersistedRef.current) return;
     hasCheckedPersistedRef.current = true;
     
     const persisted = loadWorkoutSession(sessionId);
+    console.log("[WorkoutPlayer] Loaded persisted session:", persisted);
     
     if (persisted) {
       const currentSignature = generateStepsSignature(blocks, persisted.skipWarmup);
+      console.log("[WorkoutPlayer] Signatures:", { stored: persisted.stepsSignature, current: currentSignature });
       
       if (persisted.stepsSignature !== currentSignature) {
         console.warn("[WorkoutPlayer] Steps signature mismatch, clearing");
@@ -785,6 +790,11 @@ export default function WorkoutPlayer({
         )}
 
         <div className={styles.readyCard}>
+          {/* MARCA DE VERSIÓN - QUITAR DESPUÉS */}
+          <div style={{ position: "absolute", top: 8, right: 12, fontSize: 10, color: "rgba(255,255,255,0.3)" }}>
+            v1.1-persist
+          </div>
+          
           <div className={styles.readyIcon}>🏋️</div>
           <h2 className={styles.readyTitle}>{routineTitle}</h2>
           <p className={styles.readySubtitle}>
@@ -806,6 +816,11 @@ export default function WorkoutPlayer({
   // ============================================
   return (
     <div className={styles.container}>
+      {/* MARCA DE VERSIÓN - QUITAR DESPUÉS */}
+      <div style={{ position: "fixed", top: 4, left: 8, fontSize: 10, color: "rgba(255,255,255,0.3)", zIndex: 9999 }}>
+        v1.1-persist
+      </div>
+
       {/* Modal de Resume */}
       {showResumeModal && (
         <div className={styles.modalOverlay}>

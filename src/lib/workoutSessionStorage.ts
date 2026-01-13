@@ -74,13 +74,18 @@ export function loadWorkoutSession(
 ): PersistedWorkoutSession | null {
   try {
     const key = getStorageKey(sessionId);
+    console.log("[workoutSessionStorage] Loading from key:", key);
+    
     const stored = localStorage.getItem(key);
+    console.log("[workoutSessionStorage] Raw stored value:", stored ? `${stored.substring(0, 100)}...` : null);
     
     if (!stored) {
+      console.log("[workoutSessionStorage] No stored session found");
       return null;
     }
     
     const parsed = JSON.parse(stored) as PersistedWorkoutSession;
+    console.log("[workoutSessionStorage] Parsed session:", { sessionId: parsed.sessionId, status: parsed.status, stepIndex: parsed.currentStepIndex });
     
     // Validar que tenga los campos necesarios
     if (
@@ -104,6 +109,7 @@ export function loadWorkoutSession(
       return null;
     }
     
+    console.log("[workoutSessionStorage] Valid session found!");
     return parsed;
   } catch (error) {
     console.error("[workoutSessionStorage] Error loading session:", error);
@@ -124,7 +130,9 @@ export function saveWorkoutSession(
       ...data,
       updatedAtMs: Date.now(),
     };
+    console.log("[workoutSessionStorage] Saving to key:", key, { status: toStore.status, stepIndex: toStore.currentStepIndex });
     localStorage.setItem(key, JSON.stringify(toStore));
+    console.log("[workoutSessionStorage] Saved successfully!");
   } catch (error) {
     console.error("[workoutSessionStorage] Error saving session:", error);
   }
