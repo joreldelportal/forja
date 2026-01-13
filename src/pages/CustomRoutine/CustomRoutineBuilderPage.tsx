@@ -5,9 +5,10 @@ import {
   getSelectableExercises,
   createRoutineWithExercises,
   createCustomExercise,
+  deleteCustomExercise,
   getActiveCustomExerciseCount,
   MUSCLE_GROUPS,
-  DB_EXERCISE_CATEGORIES,
+  UI_EXERCISE_CATEGORIES,
   MAX_EXERCISES_PER_ROUTINE,
   MAX_ACTIVE_CUSTOM_EXERCISES,
   type SelectableExercise,
@@ -42,6 +43,10 @@ export default function CustomRoutineBuilderPage() {
 
   // Bottom sheet for muscle group
   const [activeGroup, setActiveGroup] = useState<string | null>(null);
+
+  // Bottom sheet for custom exercises management
+  const [showCustomExercisesSheet, setShowCustomExercisesSheet] = useState(false);
+  const [deletingExerciseId, setDeletingExerciseId] = useState<string | null>(null);
 
   // Custom exercise modal
   const [showCustomModal, setShowCustomModal] = useState(false);
@@ -115,6 +120,11 @@ export default function CustomRoutineBuilderPage() {
   const selectedExercises = useMemo(() => {
     return exercises.filter(ex => selectedIds.has(ex.id));
   }, [exercises, selectedIds]);
+
+  // Filter only custom exercises for the "Mis ejercicios" section
+  const customExercises = useMemo(() => {
+    return exercises.filter(ex => ex.isCustom);
+  }, [exercises]);
 
   // Count selected per group
   const getGroupSelectedCount = (groupKey: string) => {
@@ -250,6 +260,32 @@ export default function CustomRoutineBuilderPage() {
     });
   };
 
+  const handleDeleteCustomExercise = async (exerciseId: string) => {
+    setDeletingExerciseId(exerciseId);
+    
+    const result = await deleteCustomExercise(exerciseId);
+    
+    setDeletingExerciseId(null);
+    
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
+    
+    // Remove from exercises list
+    setExercises(prev => prev.filter(ex => ex.id !== exerciseId));
+    
+    // Remove from selected if it was selected
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.delete(exerciseId);
+      return next;
+    });
+    
+    // Update count
+    setCustomExerciseCount(prev => Math.max(0, prev - 1));
+  };
+
   if (loading) {
     return (
       <div className={styles.container}>
@@ -321,6 +357,19 @@ export default function CustomRoutineBuilderPage() {
               </button>
             );
           })}
+          
+          {/* Custom exercises card */}
+          <button
+            className={`${styles.groupCard} ${styles.customCard} ${customExercises.length > 0 ? styles.hasSelected : ""}`}
+            onClick={() => setShowCustomExercisesSheet(true)}
+          >
+            <span className={styles.groupIcon}>⭐</span>
+            <span className={styles.groupName}>Mis ejercicios</span>
+            <span className={styles.groupCount}>{customExercises.length} custom</span>
+            {customExercises.length > 0 && (
+              <span className={styles.groupBadge}>{customExercises.length}</span>
+            )}
+          </button>
         </div>
 
         {/* Selected exercises preview */}
@@ -420,6 +469,97 @@ export default function CustomRoutineBuilderPage() {
         </div>
       )}
 
+      {/* Custom Exercises Management Sheet */}
+      {showCustomExercisesSheet && (
+        <div className={styles.sheetOverlay} onClick={() => setShowCustomExercisesSheet(false)}>
+          <div className={styles.sheet} onClick={e => e.stopPropagation()}>
+            <div className={styles.sheetHandle}></div>
+            
+            <div className={styles.sheetHeader}>
+              <div className={styles.sheetTitleRow}>
+                <span className={styles.sheetIcon}>⭐</span>
+                <h2 className={styles.sheetTitle}>Mis ejercicios</h2>
+              </div>
+              <button className={styles.sheetClose} onClick={() => setShowCustomExercisesSheet(false)}>✕</button>
+            </div>
+
+            <p className={styles.customSheetSubtitle}>
+              {customExerciseCount}/{MAX_ACTIVE_CUSTOM_EXERCISES} ejercicios custom · Plan Free
+            </p>
+
+            <div className={styles.sheetContent}>
+              {customExercises.length === 0 ? (
+                <div className={styles.emptyCustom}>
+                  <span className={styles.emptyIcon}>📦</span>
+                  <p className={styles.emptyMessage}>No tienes ejercicios custom</p>
+                  <button 
+                    className={styles.createCustomBtn}
+                    onClick={() => {
+                      setShowCustomExercisesSheet(false);
+                      handleOpenCustomModal();
+                    }}
+                  >
+                    + Crear ejercicio
+                  </button>
+                </div>
+              ) : (
+                <div className={styles.exerciseList}>
+                  {customExercises.map(ex => {
+                    const isSelected = selectedIds.has(ex.id);
+                    const isDeleting = deletingExerciseId === ex.id;
+                    const categoryLabel = UI_EXERCISE_CATEGORIES.find(c => c.value === ex.category)?.label || ex.category;
+                    
+                    return (
+                      <div
+                        key={ex.id}
+                        className={`${styles.customExerciseItem} ${isSelected ? styles.selected : ""} ${isDeleting ? styles.deleting : ""}`}
+                      >
+                        <button
+                          className={styles.customExerciseMain}
+                          onClick={() => toggleExercise(ex.id)}
+                        >
+                          <div className={styles.exerciseInfo}>
+                            <span className={styles.exerciseName}>{ex.name}</span>
+                            <span className={styles.categoryLabel}>{categoryLabel}</span>
+                          </div>
+                          <div className={styles.exerciseCheck}>
+                            {isSelected ? "✓" : "+"}
+                          </div>
+                        </button>
+                        <button
+                          className={styles.deleteBtn}
+                          onClick={() => handleDeleteCustomExercise(ex.id)}
+                          disabled={isDeleting}
+                          title="Eliminar ejercicio"
+                        >
+                          {isDeleting ? "..." : "🗑️"}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className={styles.sheetFooter}>
+              <button 
+                className={styles.addCustomInSheetBtn}
+                onClick={() => {
+                  setShowCustomExercisesSheet(false);
+                  handleOpenCustomModal();
+                }}
+                disabled={customExerciseCount >= MAX_ACTIVE_CUSTOM_EXERCISES}
+              >
+                + Crear nuevo ejercicio
+              </button>
+              <button className={styles.sheetDoneBtn} onClick={() => setShowCustomExercisesSheet(false)}>
+                Listo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Custom Exercise Modal */}
       {showCustomModal && (
         <div className={styles.modalOverlay}>
@@ -452,7 +592,7 @@ export default function CustomRoutineBuilderPage() {
                 value={customCategory}
                 onChange={(e) => setCustomCategory(e.target.value)}
               >
-                {DB_EXERCISE_CATEGORIES.map(cat => (
+                {UI_EXERCISE_CATEGORIES.map(cat => (
                   <option key={cat.value} value={cat.value}>{cat.label}</option>
                 ))}
               </select>

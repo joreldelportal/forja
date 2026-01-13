@@ -15,6 +15,7 @@ export type UserExercise = {
   name: string;
   category: string | null;
   type: string | null;
+  notes: string | null;
   instructions_short: string | null;
   expires_at: string | null;
   created_at: string;
@@ -143,6 +144,41 @@ export const DB_EXERCISE_CATEGORIES = [
   { value: "MOBILITY", label: "Movilidad" },
 ] as const;
 
+// UI categories for the custom exercise modal (more granular)
+// These map to DB categories but show separate options for legs
+export const UI_EXERCISE_CATEGORIES = [
+  { value: "CHEST", label: "Pecho", dbCategory: "CHEST" },
+  { value: "BACK", label: "Espalda", dbCategory: "BACK" },
+  { value: "SHOULDERS", label: "Hombros", dbCategory: "SHOULDERS" },
+  { value: "ARMS_BICEPS", label: "Bíceps", dbCategory: "ARMS_BICEPS" },
+  { value: "ARMS_TRICEPS", label: "Tríceps", dbCategory: "ARMS_TRICEPS" },
+  { value: "QUADS", label: "Cuádriceps", dbCategory: "LEGS_GLUTES" },
+  { value: "HAMSTRINGS_GLUTES", label: "Isquios / Glúteos", dbCategory: "LEGS_GLUTES" },
+  { value: "CORE", label: "Core", dbCategory: "CORE" },
+  { value: "CARDIO", label: "Cardio", dbCategory: "CARDIO" },
+  { value: "MOBILITY", label: "Movilidad", dbCategory: "MOBILITY" },
+] as const;
+
+// Helper to get DB category from UI category
+export function getDbCategoryFromUi(uiCategory: string): string {
+  const found = UI_EXERCISE_CATEGORIES.find(c => c.value === uiCategory);
+  return found?.dbCategory || uiCategory;
+}
+
+// Helper to get UI category from notes (if stored) or use getUiGroupKey
+export function getUiCategoryFromExercise(
+  category: string | null, 
+  name: string, 
+  notes: string | null
+): string {
+  // First check if UI category is stored in notes
+  if (notes && notes.startsWith("ui_category:")) {
+    return notes.replace("ui_category:", "");
+  }
+  // Otherwise use the standard logic
+  return getUiGroupKey(category, name);
+}
+
 // ============================================
 // CATALOG EXERCISES
 // ============================================
@@ -214,7 +250,7 @@ export async function createCustomExercise(
   userId: string,
   name: string,
   category: string | null,
-  type: string | null
+  type?: string | null
 ): Promise<{
   data: UserExercise | null;
   error: string | null;
@@ -234,13 +270,25 @@ export async function createCustomExercise(
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + CUSTOM_EXERCISE_EXPIRY_DAYS);
 
+  // type es NOT NULL en la BD, usar "FREE_WEIGHT" como valor por defecto
+  const exerciseType = type || "FREE_WEIGHT";
+
+  // Mapear categoría UI a categoría de BD
+  const uiCategory = category || "CHEST";
+  const dbCategory = getDbCategoryFromUi(uiCategory);
+  
+  // Guardar la categoría UI en notes si es diferente de la de BD
+  // Esto permite recuperar QUADS vs HAMSTRINGS_GLUTES
+  const notes = uiCategory !== dbCategory ? `ui_category:${uiCategory}` : null;
+
   const { data, error } = await supabase
     .from("user_exercises")
     .insert({
       user_id: userId,
       name: name.trim(),
-      category,
-      type,
+      category: dbCategory,
+      type: exerciseType,
+      notes: notes,
       expires_at: expiresAt.toISOString(),
     })
     .select()
@@ -248,6 +296,12 @@ export async function createCustomExercise(
 
   if (error) {
     console.error("[createCustomExercise] Error:", error);
+    
+    // Mensaje amigable para duplicados
+    if (error.message.includes("unique") || error.code === "23505") {
+      return { data: null, error: "Ya tienes un ejercicio con ese nombre" };
+    }
+    
     return { data: null, error: error.message };
   }
 
@@ -300,7 +354,7 @@ export async function getSelectableExercises(userId: string): Promise<{
   const custom: SelectableExercise[] = (customRes.data || []).map(ex => ({
     id: ex.id,
     name: ex.name,
-    category: getUiGroupKey(ex.category, ex.name),
+    category: getUiCategoryFromExercise(ex.category, ex.name, ex.notes),
     type: ex.type,
     isCustom: true,
     isExpired: ex.expires_at ? new Date(ex.expires_at) < now : false,
@@ -510,16 +564,18 @@ export async function createUserRoutineBlocks(
 ): Promise<{
   error: string | null;
 }> {
-  const blocks: Partial<UserRoutineBlock>[] = [];
+  const blocks: Record<string, unknown>[] = [];
   let orderIndex = 1;
 
   if (includeWarmup) {
+    // WARMUP usa SYSTEM como ref_type (el constraint lo permite)
     blocks.push({
       user_routine_id: routineId,
       order_index: orderIndex++,
       block_type: "WARMUP",
       exercise_id: null,
       user_exercise_id: null,
+      exercise_ref_type: "SYSTEM",
       sets: 1,
       reps: null,
       seconds_per_rep: null,
@@ -535,6 +591,7 @@ export async function createUserRoutineBlocks(
       block_type: "STANDARD",
       exercise_id: ex.isCustom ? null : ex.id,
       user_exercise_id: ex.isCustom ? ex.id : null,
+      exercise_ref_type: ex.isCustom ? "USER" : "SYSTEM",
       sets: 3,
       reps: 10,
       seconds_per_rep: 2,
@@ -604,8 +661,8 @@ export async function replaceBlockExercise(
   error: string | null;
 }> {
   const updates = isCustom
-    ? { exercise_id: null, user_exercise_id: newExerciseId }
-    : { exercise_id: newExerciseId, user_exercise_id: null };
+    ? { exercise_id: null, user_exercise_id: newExerciseId, exercise_ref_type: "USER" }
+    : { exercise_id: newExerciseId, user_exercise_id: null, exercise_ref_type: "SYSTEM" };
 
   const { error } = await supabase
     .from("user_routine_blocks")
@@ -839,6 +896,91 @@ export async function routineHasExpiredExercises(routineId: string): Promise<{
   return { 
     hasExpired: expiredCount > 0, 
     expiredCount, 
+    error: null 
+  };
+}
+
+// ============================================
+// ADD EXERCISE TO EXISTING ROUTINE
+// ============================================
+
+export async function addExerciseToRoutine(
+  routineId: string,
+  exerciseId: string,
+  isCustom: boolean
+): Promise<{
+  data: UserRoutineBlock | null;
+  error: string | null;
+}> {
+  // 1. Contar ejercicios actuales (excluyendo warmup)
+  const blocksRes = await getUserRoutineBlocks(routineId);
+  if (blocksRes.error) {
+    return { data: null, error: blocksRes.error };
+  }
+
+  const currentBlocks = blocksRes.data || [];
+  const nonWarmupBlocks = currentBlocks.filter(b => b.block_type !== "WARMUP");
+  
+  if (nonWarmupBlocks.length >= MAX_EXERCISES_PER_ROUTINE) {
+    return { 
+      data: null, 
+      error: `Máximo ${MAX_EXERCISES_PER_ROUTINE} ejercicios por rutina` 
+    };
+  }
+
+  // 2. Obtener el mayor order_index
+  const maxOrderIndex = currentBlocks.length > 0 
+    ? Math.max(...currentBlocks.map(b => b.order_index))
+    : 0;
+
+  // 3. Crear el nuevo bloque
+  const newBlock = {
+    user_routine_id: routineId,
+    order_index: maxOrderIndex + 1,
+    block_type: "STANDARD" as const,
+    exercise_id: isCustom ? null : exerciseId,
+    user_exercise_id: isCustom ? exerciseId : null,
+    exercise_ref_type: isCustom ? "USER" : "SYSTEM",
+    sets: 3,
+    reps: 10,
+    seconds_per_rep: 2,
+    work_seconds: null,
+    rest_seconds: 60,
+  };
+
+  const { data, error } = await supabase
+    .from("user_routine_blocks")
+    .insert(newBlock)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("[addExerciseToRoutine] Error:", error);
+    return { data: null, error: error.message };
+  }
+
+  return { data: data as UserRoutineBlock, error: null };
+}
+
+// ============================================
+// GET ROUTINE EXERCISE COUNT
+// ============================================
+
+export async function getRoutineExerciseCount(routineId: string): Promise<{
+  count: number;
+  maxAllowed: number;
+  error: string | null;
+}> {
+  const blocksRes = await getUserRoutineBlocks(routineId);
+  if (blocksRes.error) {
+    return { count: 0, maxAllowed: MAX_EXERCISES_PER_ROUTINE, error: blocksRes.error };
+  }
+
+  const nonWarmupCount = blocksRes.data?.filter(b => b.block_type !== "WARMUP").length || 0;
+  
+  return { 
+    count: nonWarmupCount, 
+    maxAllowed: MAX_EXERCISES_PER_ROUTINE, 
     error: null 
   };
 }

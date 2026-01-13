@@ -1,5 +1,6 @@
 import { supabase } from "./supabaseClient";
 import { getOrCloneSystemRoutine, getSystemRoutineById } from "./routineService";
+import { markAsTrained } from "./calendarService";
 
 // ============================================
 // TIPOS
@@ -458,6 +459,12 @@ export async function finalizeWorkoutSession(
 
   if (stateError) {
     console.error("[finalizeWorkoutSession] Error updating program state:", stateError);
+  }
+
+  // Marcar en el calendario como TRAINED
+  const markResult = await markAsTrained(userId, sessionId);
+  if (markResult.error) {
+    console.error("[finalizeWorkoutSession] Error marking as trained:", markResult.error);
   }
 
   return { data: data as WorkoutSession, error: null };

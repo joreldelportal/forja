@@ -7,9 +7,12 @@ import {
   updateUserRoutine,
   updateUserRoutineBlock,
   deleteUserRoutineBlock,
+  deleteUserRoutine,
   replaceBlockExercise,
   reorderBlock,
   getSelectableExercises,
+  addExerciseToRoutine,
+  MAX_EXERCISES_PER_ROUTINE,
   type UserRoutine,
   type UserRoutineBlockWithExercise,
   type SelectableExercise,
@@ -70,11 +73,23 @@ export default function CustomRoutineEditorPage() {
   const [exerciseSearch, setExerciseSearch] = useState("");
   const [loadingExercises, setLoadingExercises] = useState(false);
 
+  // Add exercise modal
+  const [showAddExerciseModal, setShowAddExerciseModal] = useState(false);
+  const [addExerciseSearch, setAddExerciseSearch] = useState("");
+
   // Reordering
   const [reordering, setReordering] = useState(false);
 
   // Skip warmup
   const [skipWarmup, setSkipWarmup] = useState(false);
+
+  // Discard confirmation modal
+  const [showDiscardModal, setShowDiscardModal] = useState(false);
+  const [discarding, setDiscarding] = useState(false);
+
+  // Track unsaved changes & save feedback
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showSavedMessage, setShowSavedMessage] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -367,6 +382,101 @@ export default function CustomRoutineEditorPage() {
     setReplacingBlockId(null);
   };
 
+  // ============================================
+  // ADD EXERCISE TO ROUTINE
+  // ============================================
+
+  const canAddMoreExercises = otherBlocks.length < MAX_EXERCISES_PER_ROUTINE;
+
+  const handleOpenAddExerciseModal = async () => {
+    if (!user || !canAddMoreExercises) return;
+    
+    await closeEditing();
+    
+    setShowAddExerciseModal(true);
+    setAddExerciseSearch("");
+    setLoadingExercises(true);
+
+    const result = await getSelectableExercises(user.id);
+    
+    if (result.error) {
+      setError(result.error);
+      setShowAddExerciseModal(false);
+    } else {
+      setSelectableExercises(result.data || []);
+    }
+    
+    setLoadingExercises(false);
+  };
+
+  const handleAddExercise = async (exercise: SelectableExercise) => {
+    if (!routineId) return;
+
+    const result = await addExerciseToRoutine(
+      routineId,
+      exercise.id,
+      exercise.isCustom
+    );
+
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
+
+    // Recargar bloques para obtener el nuevo
+    const blocksRes = await getUserRoutineBlocks(routineId);
+    if (blocksRes.data) {
+      setBlocks(blocksRes.data);
+    }
+
+    setShowAddExerciseModal(false);
+  };
+
+  // ============================================
+  // SAVE, DISCARD, START ACTIONS
+  // ============================================
+
+  const handleSaveAndExit = async () => {
+    await closeEditing();
+    
+    // Mostrar mensaje de guardado
+    setShowSavedMessage(true);
+    setHasUnsavedChanges(false);
+    
+    // Ocultar mensaje después de 2 segundos
+    setTimeout(() => {
+      setShowSavedMessage(false);
+    }, 2000);
+  };
+
+  const handleDiscard = () => {
+    // Mostrar modal de confirmación
+    setShowDiscardModal(true);
+  };
+
+  const handleConfirmDiscard = async () => {
+    if (!routineId) return;
+    
+    setDiscarding(true);
+    
+    const result = await deleteUserRoutine(routineId);
+    
+    setDiscarding(false);
+    
+    if (result.error) {
+      setError(result.error);
+      setShowDiscardModal(false);
+      return;
+    }
+    
+    // Navegar después de eliminar
+    navigate("/plan", { replace: true });
+  };
+
+  const handleCancelDiscard = () => {
+    setShowDiscardModal(false);
+  };
+
   const handleStartWorkout = async () => {
     if (!routine || !user || hasExpiredBlocks) return;
 
@@ -528,21 +638,36 @@ export default function CustomRoutineEditorPage() {
             <span>Cada repetición = {SECONDS_PER_REP}s. Toca un ejercicio para editar series, reps y descansos.</span>
           </div>
 
-          {/* Toggle de skip warmup */}
-          {hasWarmup && (
-            <div className={styles.warmupToggle}>
-              <label className={styles.toggleLabel}>
-                <input
-                  type="checkbox"
-                  checked={skipWarmup}
-                  onChange={(e) => setSkipWarmup(e.target.checked)}
-                  className={styles.toggleInput}
-                />
-                <span className={styles.toggleSlider}></span>
-                <span className={styles.toggleText}>Saltar calentamiento</span>
-              </label>
-            </div>
-          )}
+          {/* Row: Toggle warmup + Agregar ejercicio */}
+          <div className={styles.controlsRow}>
+            {/* Toggle de skip warmup */}
+            {hasWarmup && (
+              <div className={styles.warmupToggle}>
+                <label className={styles.toggleLabel}>
+                  <input
+                    type="checkbox"
+                    checked={skipWarmup}
+                    onChange={(e) => setSkipWarmup(e.target.checked)}
+                    className={styles.toggleInput}
+                  />
+                  <span className={styles.toggleSlider}></span>
+                  <span className={styles.toggleText}>Saltar calentamiento</span>
+                </label>
+              </div>
+            )}
+
+            {/* Botón Agregar ejercicio */}
+            <button
+              className={`${styles.addExerciseBtn} ${!canAddMoreExercises ? styles.disabled : ""}`}
+              onClick={handleOpenAddExerciseModal}
+              disabled={!canAddMoreExercises}
+            >
+              ➕ Agregar ejercicio
+              <span className={styles.exerciseCount}>
+                {otherBlocks.length}/{MAX_EXERCISES_PER_ROUTINE}
+              </span>
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -793,12 +918,35 @@ export default function CustomRoutineEditorPage() {
         </div>
 
         <div className={styles.actions}>
+          {/* Saved message toast */}
+          {showSavedMessage && (
+            <div className={styles.savedToast}>
+              ✓ Rutina guardada
+            </div>
+          )}
+          
+          <div className={styles.actionRow}>
+            <button
+              className={`${styles.saveBtn} ${!editingBlockId && !editingTitle ? styles.saveBtnDisabled : ""}`}
+              onClick={handleSaveAndExit}
+              disabled={starting || (!editingBlockId && !editingTitle)}
+            >
+              {editingBlockId || editingTitle ? "💾 Guardar" : "✓ Guardado"}
+            </button>
+            <button
+              className={styles.discardBtn}
+              onClick={handleDiscard}
+              disabled={starting}
+            >
+              🗑️ Eliminar
+            </button>
+          </div>
           <button
             className={styles.primaryBtn}
             onClick={handleStartWorkout}
             disabled={starting || hasExpiredBlocks || blocks.length === 0}
           >
-            {starting ? "Preparando..." : "Empezar ahora"}
+            {starting ? "Preparando..." : "▶ Guardar y empezar ahora"}
           </button>
         </div>
       </div>
@@ -852,6 +1000,105 @@ export default function CustomRoutineEditorPage() {
                 )}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Add exercise modal */}
+      {showAddExerciseModal && (
+        <div className={styles.modalOverlay} onClick={() => setShowAddExerciseModal(false)}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>Agregar ejercicio</h3>
+              <button
+                className={styles.modalCloseBtn}
+                onClick={() => setShowAddExerciseModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className={styles.modalSubtitle}>
+              {otherBlocks.length}/{MAX_EXERCISES_PER_ROUTINE} ejercicios
+            </div>
+
+            <input
+              type="text"
+              className={styles.modalSearch}
+              placeholder="🔍 Buscar ejercicio..."
+              value={addExerciseSearch}
+              onChange={(e) => setAddExerciseSearch(e.target.value)}
+            />
+
+            {loadingExercises ? (
+              <div className={styles.modalLoading}>
+                <span className={styles.spinner}></span>
+                <p>Cargando ejercicios...</p>
+              </div>
+            ) : (
+              <div className={styles.modalExerciseList}>
+                {Object.entries(
+                  MUSCLE_GROUPS.reduce((acc, group) => {
+                    const exercises = selectableExercises.filter(
+                      ex => ex.category === group.key && 
+                      ex.name.toLowerCase().includes(addExerciseSearch.toLowerCase())
+                    );
+                    if (exercises.length > 0) {
+                      acc[group.key] = { label: group.label, exercises };
+                    }
+                    return acc;
+                  }, {} as Record<string, { label: string; exercises: SelectableExercise[] }>)
+                ).map(([key, group]) => (
+                  <div key={key} className={styles.exerciseGroup}>
+                    <h4 className={styles.groupLabel}>{group.label}</h4>
+                    {group.exercises.map(ex => (
+                      <button
+                        key={ex.id}
+                        className={`${styles.exerciseOption} ${ex.isCustom ? styles.custom : ""}`}
+                        onClick={() => handleAddExercise(ex)}
+                      >
+                        <span className={styles.exerciseOptionName}>{ex.name}</span>
+                        {ex.isCustom && <span className={styles.customBadge}>Custom</span>}
+                      </button>
+                    ))}
+                  </div>
+                ))}
+                {selectableExercises.filter(ex => 
+                  ex.name.toLowerCase().includes(addExerciseSearch.toLowerCase())
+                ).length === 0 && (
+                  <p className={styles.noResults}>No se encontraron ejercicios</p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Discard confirmation modal */}
+      {showDiscardModal && (
+        <div className={styles.modalOverlay} onClick={handleCancelDiscard}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.discardModalIcon}>🗑️</div>
+            <h3 className={styles.modalTitle}>¿Descartar rutina?</h3>
+            <p className={styles.discardModalText}>
+              Esta acción eliminará la rutina <strong>"{routine?.title}"</strong> permanentemente.
+            </p>
+            <div className={styles.discardModalActions}>
+              <button
+                className={styles.discardConfirmBtn}
+                onClick={handleConfirmDiscard}
+                disabled={discarding}
+              >
+                {discarding ? "Eliminando..." : "Sí, eliminar"}
+              </button>
+              <button
+                className={styles.discardCancelBtn}
+                onClick={handleCancelDiscard}
+                disabled={discarding}
+              >
+                Cancelar
+              </button>
+            </div>
           </div>
         </div>
       )}

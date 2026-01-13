@@ -22,6 +22,7 @@ import {
   type SystemRoutine,
   type ProgramDayWorkout,
 } from "../../services/routineService";
+import { getUserRoutines, type UserRoutine } from "../../services/customRoutineService";
 import styles from "./PlanPage.module.css";
 
 export default function PlanPage() {
@@ -42,6 +43,9 @@ export default function PlanPage() {
   
   const [showTrainedWarning, setShowTrainedWarning] = useState(false);
   const [alreadyTrainedToday, setAlreadyTrainedToday] = useState(false);
+  
+  // User custom routines
+  const [userRoutines, setUserRoutines] = useState<UserRoutine[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -125,6 +129,12 @@ export default function PlanPage() {
         // 6. Preparar opciones de switch
         const options = getAvailableSwitchOptions(stateRes.data);
         setSwitchOptions(options);
+
+        // 7. Cargar rutinas del usuario
+        const routinesRes = await getUserRoutines(user.id);
+        if (routinesRes.data) {
+          setUserRoutines(routinesRes.data);
+        }
 
       } catch (err) {
         console.error("Error loading plan:", err);
@@ -229,10 +239,6 @@ export default function PlanPage() {
     });
   };
 
-  const handleBack = () => {
-    navigate("/");
-  };
-
   if (loading) {
     return (
       <div className={styles.container}>
@@ -266,12 +272,9 @@ export default function PlanPage() {
     <div className={styles.container}>
       <div className={styles.content}>
         <div className={styles.header}>
-          <button className={styles.backBtn} onClick={handleBack}>
-            ← Volver
-          </button>
-          <h1 className={styles.title}>¿Qué quieres entrenar hoy?</h1>
+          <h1 className={styles.title}>Entrenar</h1>
           <p className={styles.subtitle}>
-            Elige tu rutina y comienza cuando estés listo
+            Elige qué entrenar hoy
           </p>
         </div>
 
@@ -326,11 +329,14 @@ export default function PlanPage() {
           </div>
         )}
 
+        {/* Sección RUTINA RECOMENDADA */}
+        <div className={styles.sectionLabel}>RUTINA RECOMENDADA</div>
+
         {/* Card Rutina Recomendada - HERO */}
         <div className={styles.recommendedCard}>
           <div className={styles.recommendedHeader}>
             <span className={styles.recommendedBadge}>
-              ✨ Recomendada para ti
+              ✨ Para ti
             </span>
             {alreadyTrainedToday && (
               <span className={styles.trainedBadge}>✓ Entrenaste hoy</span>
@@ -356,13 +362,9 @@ export default function PlanPage() {
               <span className={styles.metaDivider}>•</span>
               <span className={styles.metaItem}>
                 <span className={styles.metaIcon}>🔥</span>
-                Calentamiento incluido
+                Calentamiento
               </span>
             </div>
-
-            <p className={styles.routineDescription}>
-              Rutina diseñada según tu perfil y objetivos. Ajustada a tu nivel de experiencia.
-            </p>
           </div>
 
           <div className={styles.recommendedActions}>
@@ -382,32 +384,78 @@ export default function PlanPage() {
           )}
         </div>
 
-        {/* Card Rutina Personalizada */}
-        <div className={styles.customCard}>
-          <div className={styles.customHeader}>
-            <span className={styles.customIcon}>🎨</span>
-            <div>
-              <h3 className={styles.customTitle}>Rutina personalizada</h3>
-              <p className={styles.customSubtitle}>
-                Crea tu propia rutina con tus ejercicios favoritos
-              </p>
-            </div>
-          </div>
-
-          <div className={styles.customActions}>
+        {/* Sección MIS RUTINAS - Mejorada */}
+        <div className={styles.myRoutinesSection}>
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>
+              <span className={styles.sectionIcon}>⭐</span>
+              Mis Rutinas
+            </h2>
             <button 
-              className={styles.customPrimaryBtn} 
+              className={styles.newRoutineBtn}
               onClick={() => navigate("/custom-routine/builder")}
             >
-              Crear nueva
-            </button>
-            <button 
-              className={styles.customSecondaryBtn}
-              onClick={() => navigate("/custom-routine/list")}
-            >
-              Mis rutinas
+              + Nueva
             </button>
           </div>
+
+          {userRoutines.length === 0 ? (
+            <div className={styles.emptyRoutines}>
+              <div className={styles.emptyIcon}>🎯</div>
+              <h3 className={styles.emptyTitle}>Crea tu primera rutina</h3>
+              <p className={styles.emptyText}>
+                Diseña entrenamientos personalizados con tus ejercicios favoritos
+              </p>
+              <button 
+                className={styles.createRoutineBtn}
+                onClick={() => navigate("/custom-routine/builder")}
+              >
+                <span>✨</span> Crear rutina personalizada
+              </button>
+            </div>
+          ) : (
+            <div className={styles.routinesList}>
+              {userRoutines.slice(0, 3).map((routine) => {
+                const updatedDate = new Date(routine.updated_at);
+                const isToday = updatedDate.toDateString() === new Date().toDateString();
+                const timeLabel = isToday ? "Hoy" : updatedDate.toLocaleDateString("es", { day: "numeric", month: "short" });
+                
+                return (
+                  <div key={routine.id} className={styles.routineCard}>
+                    <div className={styles.routineCardContent}>
+                      <h4 className={styles.routineCardTitle}>{routine.title}</h4>
+                      <span className={styles.routineCardDate}>{timeLabel}</span>
+                    </div>
+                    <div className={styles.routineCardActions}>
+                      <button
+                        className={styles.editBtn}
+                        onClick={() => navigate(`/custom-routine/${routine.id}`)}
+                        title="Editar"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        className={styles.playBtn}
+                        onClick={() => navigate(`/custom-routine/${routine.id}`)}
+                        title="Entrenar"
+                      >
+                        ▶
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+              
+              {userRoutines.length > 3 && (
+                <button 
+                  className={styles.viewAllBtn}
+                  onClick={() => navigate("/custom-routine/list")}
+                >
+                  Ver todas ({userRoutines.length})
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

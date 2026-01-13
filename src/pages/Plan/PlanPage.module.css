@@ -21,6 +21,15 @@
   margin-bottom: 28px;
 }
 
+.sectionLabel {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
 .backBtn {
   background: none;
   border: none;
@@ -489,4 +498,212 @@
   .previewBtn {
     width: 100%;
   }
+}
+
+/* ============================================
+   MIS RUTINAS SECTION - Mejorada
+   ============================================ */
+
+.myRoutinesSection {
+  background: linear-gradient(145deg, rgba(168, 85, 247, 0.08) 0%, rgba(236, 72, 153, 0.04) 100%);
+  border: 1px solid rgba(168, 85, 247, 0.2);
+  border-radius: 24px;
+  padding: 20px;
+  margin-top: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.myRoutinesSection::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #a855f7, #ec4899);
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.sectionIcon {
+  font-size: 20px;
+}
+
+.newRoutineBtn {
+  padding: 8px 14px;
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.2) 0%, rgba(236, 72, 153, 0.2) 100%);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: 10px;
+  color: #a855f7;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.newRoutineBtn:hover {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.3) 0%, rgba(236, 72, 153, 0.3) 100%);
+  transform: translateY(-1px);
+}
+
+/* Empty state */
+.emptyRoutines {
+  text-align: center;
+  padding: 24px 16px;
+}
+
+.emptyIcon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+
+.emptyTitle {
+  color: #ffffff;
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0 0 6px 0;
+}
+
+.emptyText {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+  margin: 0 0 20px 0;
+  line-height: 1.4;
+}
+
+.createRoutineBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 24px;
+  background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+  border: none;
+  border-radius: 14px;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.createRoutineBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(168, 85, 247, 0.4);
+}
+
+/* Routines list */
+.routinesList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.routineCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  transition: all 0.2s;
+}
+
+.routineCard:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(168, 85, 247, 0.2);
+}
+
+.routineCardContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.routineCardTitle {
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 2px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.routineCardDate {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 12px;
+}
+
+.routineCardActions {
+  display: flex;
+  gap: 8px;
+}
+
+.editBtn,
+.playBtn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 16px;
+}
+
+.editBtn {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.editBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.playBtn {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(22, 163, 74, 0.2) 100%);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.playBtn:hover {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.3) 0%, rgba(22, 163, 74, 0.3) 100%);
+  transform: scale(1.05);
+}
+
+.viewAllBtn {
+  width: 100%;
+  padding: 12px;
+  margin-top: 8px;
+  background: transparent;
+  border: 1px dashed rgba(168, 85, 247, 0.3);
+  border-radius: 12px;
+  color: #a855f7;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.viewAllBtn:hover {
+  background: rgba(168, 85, 247, 0.1);
+  border-style: solid;
 }

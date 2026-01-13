@@ -9,7 +9,7 @@
   width: 100%;
   background: linear-gradient(180deg, #0f0f0f 0%, #0a0a0a 100%);
   padding: 20px;
-  padding-bottom: 100px;
+  padding-bottom: 160px;
 }
 
 .content {
@@ -147,9 +147,9 @@
   line-height: 1.4;
 }
 
-/* Toggle warmup */
+/* Warmup Toggle */
 .warmupToggle {
-  margin-bottom: 16px;
+  /* No margin - está dentro de controlsRow */
 }
 
 .toggleLabel {
@@ -195,6 +195,50 @@
 .toggleText {
   color: #8892b0;
   font-size: 14px;
+}
+
+/* Controls Row - Toggle + Add Button */
+.controlsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.addExerciseBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 10px;
+  color: #22c55e;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.addExerciseBtn:hover:not(:disabled) {
+  background: rgba(34, 197, 94, 0.25);
+}
+
+.addExerciseBtn.disabled,
+.addExerciseBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.exerciseCount {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 /* Banners */
@@ -554,19 +598,104 @@
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(to top, #0a0a0a 0%, rgba(10, 10, 10, 0.95) 100%);
-  padding: 20px;
+  background: linear-gradient(to top, #0a0a0a 0%, rgba(10, 10, 10, 0.98) 100%);
+  padding: 16px 20px;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  /* For toast positioning */
+  z-index: 100;
+}
+
+.actionRow {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  max-width: 400px;
+}
+
+.saveBtn {
+  flex: 1;
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  padding: 14px 20px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.saveBtn:hover:not(:disabled) {
+  background: rgba(34, 197, 94, 0.25);
+}
+
+.saveBtn:disabled,
+.saveBtn.saveBtnDisabled {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(34, 197, 94, 0.5);
+  border-color: rgba(34, 197, 94, 0.15);
+  cursor: default;
+}
+
+.savedToast {
+  position: absolute;
+  top: -50px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  color: #000;
+  padding: 10px 20px;
+  border-radius: 100px;
+  font-size: 14px;
+  font-weight: 600;
+  animation: toastSlide 0.3s ease-out;
+  box-shadow: 0 4px 20px rgba(34, 197, 94, 0.4);
+}
+
+@keyframes toastSlide {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.discardBtn {
+  flex: 1;
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  padding: 14px 20px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.discardBtn:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.discardBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .primaryBtn {
   background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
   color: #000;
   border: none;
-  padding: 18px 48px;
+  padding: 16px 32px;
   border-radius: 14px;
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
@@ -678,6 +807,12 @@
   margin: 0;
 }
 
+.modalSubtitle {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
 .modalCloseBtn {
   width: 36px;
   height: 36px;
@@ -779,4 +914,77 @@
   text-align: center;
   color: rgba(255, 255, 255, 0.5);
   padding: 24px;
+}
+
+/* ============================================
+   Discard Modal
+   ============================================ */
+
+.discardModalIcon {
+  font-size: 48px;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.discardModalText {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.discardModalText strong {
+  color: #ffffff;
+}
+
+.discardModalActions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.discardConfirmBtn {
+  width: 100%;
+  padding: 14px 24px;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  border: none;
+  border-radius: 12px;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.discardConfirmBtn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3);
+}
+
+.discardConfirmBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.discardCancelBtn {
+  width: 100%;
+  padding: 14px 24px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.discardCancelBtn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.discardCancelBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
