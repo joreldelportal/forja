@@ -19,6 +19,14 @@ import {
   beepOnce,
   resetBeepGuard,
 } from "../../lib/workoutAudio";
+import {
+  loadWorkoutSession,
+  saveWorkoutSession,
+  clearWorkoutSession,
+  generateStepsSignature,
+  calculateStepRemaining,
+  type PersistedWorkoutSession,
+} from "../../lib/workoutSessionStorage";
 import { useOneTimeFlag } from "../../hooks/useOneTimeFlag";
 import AudioEnableModal from "../../components/AudioEnableModal/AudioEnableModal";
 import styles from "./WorkoutPlayer.module.css";
@@ -81,6 +89,7 @@ type WorkoutPlayerProps = {
 
 const SECONDS_PER_REP = 2;
 const COUNTDOWN_BETWEEN_EXERCISES = 3;
+const PERSIST_INTERVAL_MS = 5000;
 
 const BLOCK_TYPE_LABELS: Record<BlockType, string> = {
   WARMUP: "Calentamiento",
@@ -219,10 +228,12 @@ export default function WorkoutPlayer({
   const [stepRemaining, setStepRemaining] = useState(0);
   const [totalElapsed, setTotalElapsed] = useState(0);
   
-  const startedAtRef = useRef<number>(0);
-  const accumulatedRef = useRef<number>(0);
+  // Refs para timestamps (modelo timestamp-driven)
+  const workoutStartedAtRef = useRef<number>(0);
+  const totalAccumulatedRef = useRef<number>(0);
   const stepStartedAtRef = useRef<number>(0);
-  const stepDurationRef = useRef<number>(0);
+  const stepOriginalDurationRef = useRef<number>(0);
+  const stepAccumulatedRef = useRef<number>(0);
   const animationFrameRef = useRef<number | null>(null);
   
   // Audio state
@@ -237,43 +248,156 @@ export default function WorkoutPlayer({
   const [audioOnboardingDone, dismissAudioOnboarding] = useOneTimeFlag("audioOnboardingDone");
   const [pauseTipDismissed, dismissPauseTip] = useOneTimeFlag("backgroundPauseTipDismissed");
   
-  // Modal de audio unlock
   const [showAudioModal, setShowAudioModal] = useState(false);
-  
-  // Modal de pausa por background
   const [showResumeModal, setShowResumeModal] = useState(false);
   const pausedByBackgroundRef = useRef(false);
 
+  // ============================================
+  // REHIDRATACIÓN - Estado
+  // ============================================
+  const [showRehydrateModal, setShowRehydrateModal] = useState(false);
+  const [pendingRehydration, setPendingRehydration] = useState<PersistedWorkoutSession | null>(null);
+  const hasCheckedPersistedRef = useRef(false);
+  const persistIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // ============================================
+  // PERSISTENCIA - Helpers
+  // ============================================
+  
+  const persistCurrentState = useCallback((
+    overrideStatus?: "RUNNING" | "PAUSED",
+    overrideStepIndex?: number
+  ) => {
+    const now = Date.now();
+    const currentStatus = overrideStatus || (status === "RUNNING" ? "RUNNING" : "PAUSED");
+    const stepIndex = overrideStepIndex ?? currentStepIndex;
+    
+    let currentTotalAccumulated = totalAccumulatedRef.current;
+    let currentStepAccumulated = stepAccumulatedRef.current;
+    
+    if (status === "RUNNING" && !overrideStatus) {
+      currentTotalAccumulated += now - workoutStartedAtRef.current;
+      currentStepAccumulated += now - stepStartedAtRef.current;
+    }
+    
+    const data: PersistedWorkoutSession = {
+      sessionId,
+      status: currentStatus,
+      currentStepIndex: stepIndex,
+      skipWarmup,
+      stepsSignature: generateStepsSignature(blocks, skipWarmup),
+      workoutStartedAtMs: workoutStartedAtRef.current,
+      totalAccumulatedMs: currentTotalAccumulated,
+      stepStartedAtMs: stepStartedAtRef.current,
+      stepOriginalDurationSec: stepOriginalDurationRef.current,
+      stepAccumulatedMs: currentStepAccumulated,
+      updatedAtMs: now,
+    };
+    
+    saveWorkoutSession(sessionId, data);
+  }, [sessionId, status, currentStepIndex, skipWarmup, blocks]);
+
+  const clearPersistedState = useCallback(() => {
+    clearWorkoutSession(sessionId);
+    if (persistIntervalRef.current) {
+      clearInterval(persistIntervalRef.current);
+      persistIntervalRef.current = null;
+    }
+  }, [sessionId]);
+
+  const rehydrateFromPersisted = useCallback((persisted: PersistedWorkoutSession) => {
+    const now = Date.now();
+    const rehydratedSteps = buildSteps(blocks, persisted.skipWarmup);
+    
+    if (persisted.currentStepIndex >= rehydratedSteps.length) {
+      console.warn("[WorkoutPlayer] Invalid step index in persisted session");
+      clearPersistedState();
+      return false;
+    }
+    
+    setSkipWarmup(persisted.skipWarmup);
+    setSteps(rehydratedSteps);
+    setCurrentStepIndex(persisted.currentStepIndex);
+    
+    workoutStartedAtRef.current = now;
+    totalAccumulatedRef.current = persisted.totalAccumulatedMs;
+    stepStartedAtRef.current = now;
+    stepOriginalDurationRef.current = persisted.stepOriginalDurationSec;
+    stepAccumulatedRef.current = persisted.stepAccumulatedMs;
+    
+    const remaining = calculateStepRemaining(persisted, now);
+    setStepRemaining(remaining);
+    setTotalElapsed(Math.floor(persisted.totalAccumulatedMs / 1000));
+    
+    resetBeepGuard();
+    lastBeepSecondRef.current = -1;
+    lastStepIndexRef.current = persisted.currentStepIndex;
+    
+    setStatus("PAUSED");
+    setShowResumeModal(true);
+    
+    console.log("[WorkoutPlayer] Rehydrated from persisted session", {
+      stepIndex: persisted.currentStepIndex,
+      remaining,
+    });
+    
+    return true;
+  }, [blocks, clearPersistedState]);
+
+  // ============================================
+  // EFFECTS
+  // ============================================
+
+  // Verificar sesión persistida al montar
   useEffect(() => {
-    if (!showWarmupPrompt && blocks.length > 0) {
+    if (hasCheckedPersistedRef.current) return;
+    hasCheckedPersistedRef.current = true;
+    
+    const persisted = loadWorkoutSession(sessionId);
+    
+    if (persisted) {
+      const currentSignature = generateStepsSignature(blocks, persisted.skipWarmup);
+      
+      if (persisted.stepsSignature !== currentSignature) {
+        console.warn("[WorkoutPlayer] Steps signature mismatch, clearing");
+        clearPersistedState();
+        return;
+      }
+      
+      setPendingRehydration(persisted);
+      setShowRehydrateModal(true);
+    }
+  }, [sessionId, blocks, clearPersistedState]);
+
+  // Construir steps
+  useEffect(() => {
+    if (!showWarmupPrompt && !showRehydrateModal && blocks.length > 0 && steps.length === 0) {
       const generatedSteps = buildSteps(blocks, skipWarmup);
       setSteps(generatedSteps);
       if (generatedSteps.length > 0) {
         setStepRemaining(generatedSteps[0].durationSec);
-        stepDurationRef.current = generatedSteps[0].durationSec;
+        stepOriginalDurationRef.current = generatedSteps[0].durationSec;
       }
     }
-  }, [blocks, skipWarmup, showWarmupPrompt]);
+  }, [blocks, skipWarmup, showWarmupPrompt, showRehydrateModal, steps.length]);
 
-  // Detectar cuando la app pierde/gana foco
+  // Visibilitychange
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden" && status === "RUNNING") {
-        // Pausar cuando se va al background
+        persistCurrentState("PAUSED");
         pausedByBackgroundRef.current = true;
         handlePause();
       } else if (document.visibilityState === "visible" && status === "PAUSED" && pausedByBackgroundRef.current) {
-        // Mostrar modal de resume cuando vuelve
         setShowResumeModal(true);
       }
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [status]);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [status, persistCurrentState]);
 
+  // Animation frame loop
   useEffect(() => {
     if (status !== "RUNNING") {
       if (animationFrameRef.current) {
@@ -286,24 +410,23 @@ export default function WorkoutPlayer({
     const tick = () => {
       const now = Date.now();
       
-      const totalNow = accumulatedRef.current + (now - startedAtRef.current) / 1000;
-      setTotalElapsed(Math.floor(totalNow));
+      const totalNowMs = totalAccumulatedRef.current + (now - workoutStartedAtRef.current);
+      setTotalElapsed(Math.floor(totalNowMs / 1000));
       
-      const stepElapsedNow = (now - stepStartedAtRef.current) / 1000;
-      const remaining = Math.max(0, stepDurationRef.current - stepElapsedNow);
-      const remainingCeil = Math.ceil(remaining);
+      const stepElapsedMs = stepAccumulatedRef.current + (now - stepStartedAtRef.current);
+      const stepDurationMs = stepOriginalDurationRef.current * 1000;
+      const remainingMs = Math.max(0, stepDurationMs - stepElapsedMs);
+      const remainingCeil = Math.ceil(remainingMs / 1000);
       setStepRemaining(remainingCeil);
       
-      // Audio beeps
       if (soundEnabled && remainingCeil !== lastBeepSecondRef.current) {
         lastBeepSecondRef.current = remainingCeil;
-        
         if (remainingCeil === 3 || remainingCeil === 2 || remainingCeil === 1) {
           beepOnce(`countdown-${currentStepIndex}-${remainingCeil}`, beepShort);
         }
       }
       
-      if (remaining <= 0) {
+      if (remainingMs <= 0) {
         goToNextStep();
       } else {
         animationFrameRef.current = requestAnimationFrame(tick);
@@ -311,24 +434,63 @@ export default function WorkoutPlayer({
     };
 
     animationFrameRef.current = requestAnimationFrame(tick);
-
     return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
     };
-  }, [status, currentStepIndex, steps]);
+  }, [status, currentStepIndex, soundEnabled]);
+
+  // Auto-save periódico
+  useEffect(() => {
+    if (status === "RUNNING") {
+      persistIntervalRef.current = setInterval(() => {
+        persistCurrentState();
+      }, PERSIST_INTERVAL_MS);
+    } else {
+      if (persistIntervalRef.current) {
+        clearInterval(persistIntervalRef.current);
+        persistIntervalRef.current = null;
+      }
+    }
+    
+    return () => {
+      if (persistIntervalRef.current) clearInterval(persistIntervalRef.current);
+    };
+  }, [status, persistCurrentState]);
+
+  // ============================================
+  // HANDLERS
+  // ============================================
 
   const handleWarmupChoice = (skip: boolean) => {
     setSkipWarmup(skip);
     setShowWarmupPrompt(false);
   };
 
-  // ============================================
-  // INICIO CON MODAL DE AUDIO
-  // ============================================
+  const handleContinueRehydration = async () => {
+    setShowRehydrateModal(false);
+    
+    if (pendingRehydration) {
+      try {
+        await initAudio();
+        await forceUnlock();
+      } catch (error) {
+        console.error("[WorkoutPlayer] Audio init on rehydrate failed:", error);
+      }
+      
+      rehydrateFromPersisted(pendingRehydration);
+      setPendingRehydration(null);
+    }
+  };
+
+  const handleDiscardRehydration = async () => {
+    setShowRehydrateModal(false);
+    setPendingRehydration(null);
+    clearPersistedState();
+    await updateWorkoutSession(sessionId, { status: "ABORTED" });
+    navigate("/");
+  };
+
   const handleStartAttempt = () => {
-    // Si no ha visto el onboarding de audio, mostrar modal
     if (!audioOnboardingDone) {
       setShowAudioModal(true);
     } else {
@@ -339,36 +501,25 @@ export default function WorkoutPlayer({
   const handleAudioEnable = async () => {
     dismissAudioOnboarding();
     setShowAudioModal(false);
-    
-    // Activar sonido
     setSoundEnabledState(true);
     setSoundEnabled(true);
-    
-    // Iniciar
     await handleStart();
   };
 
   const handleAudioSkip = async () => {
     dismissAudioOnboarding();
     setShowAudioModal(false);
-    
-    // Desactivar sonido
     setSoundEnabledState(false);
     setSoundEnabled(false);
-    
-    // Iniciar igual
     await handleStart();
   };
 
   const handleStart = useCallback(async () => {
-    // Initialize audio with error handling (don't let it block workout start)
     let audioOk = false;
     try {
       audioOk = await initAudio();
-      console.log("[WorkoutPlayer] Audio init result:", audioOk);
     } catch (error) {
-      console.error("[WorkoutPlayer] Audio init error (continuing anyway):", error);
-      audioOk = false;
+      console.error("[WorkoutPlayer] Audio init error:", error);
     }
     
     setAudioReady(audioOk);
@@ -377,67 +528,54 @@ export default function WorkoutPlayer({
     lastStepIndexRef.current = -1;
     
     const now = Date.now();
-    startedAtRef.current = now;
+    workoutStartedAtRef.current = now;
     stepStartedAtRef.current = now;
-    accumulatedRef.current = 0;
+    totalAccumulatedRef.current = 0;
+    stepAccumulatedRef.current = 0;
     
     if (steps.length > 0) {
-      stepDurationRef.current = steps[0].durationSec;
+      stepOriginalDurationRef.current = steps[0].durationSec;
       setStepRemaining(steps[0].durationSec);
     }
     
     setStatus("RUNNING");
     updateWorkoutSession(sessionId, { status: "STARTED" });
+    persistCurrentState("RUNNING", 0);
     
-    // Try to beep, but don't crash if it fails
     if (audioOk && soundEnabled) {
-      try {
-        beepStartWork();
-      } catch (e) {
-        console.error("[WorkoutPlayer] Beep failed:", e);
-      }
+      try { beepStartWork(); } catch (e) { console.error(e); }
     }
-  }, [sessionId, steps, soundEnabled]);
+  }, [sessionId, steps, soundEnabled, persistCurrentState]);
 
   const handlePause = useCallback(() => {
     const now = Date.now();
-    
-    accumulatedRef.current += (now - startedAtRef.current) / 1000;
-    
-    const stepElapsed = (now - stepStartedAtRef.current) / 1000;
-    stepDurationRef.current = Math.max(0, stepDurationRef.current - stepElapsed);
+    totalAccumulatedRef.current += now - workoutStartedAtRef.current;
+    stepAccumulatedRef.current += now - stepStartedAtRef.current;
     
     setStatus("PAUSED");
     updateWorkoutSession(sessionId, { 
       status: "PAUSED", 
-      total_elapsed_sec: Math.floor(accumulatedRef.current) 
+      total_elapsed_sec: Math.floor(totalAccumulatedRef.current / 1000) 
     });
-  }, [sessionId]);
+    persistCurrentState("PAUSED");
+  }, [sessionId, persistCurrentState]);
 
   const handleResume = useCallback(async () => {
-    // Force unlock audio on resume (important for iOS PWA)
-    try {
-      await forceUnlock();
-    } catch (error) {
-      console.error("[WorkoutPlayer] forceUnlock failed:", error);
-    }
+    try { await forceUnlock(); } catch (e) { console.error(e); }
     
     const now = Date.now();
-    startedAtRef.current = now;
+    workoutStartedAtRef.current = now;
     stepStartedAtRef.current = now;
     
     pausedByBackgroundRef.current = false;
     setShowResumeModal(false);
     setStatus("RUNNING");
     updateWorkoutSession(sessionId, { status: "STARTED" });
-  }, [sessionId]);
+    persistCurrentState("RUNNING");
+  }, [sessionId, persistCurrentState]);
 
-  // Resume desde el modal de background
-  const handleResumeFromModal = () => {
-    handleResume();
-  };
-
-  // Finalizar desde el modal de background
+  const handleResumeFromModal = () => handleResume();
+  
   const handleFinishFromModal = () => {
     setShowResumeModal(false);
     pausedByBackgroundRef.current = false;
@@ -454,110 +592,83 @@ export default function WorkoutPlayer({
 
     const nextStep = steps[nextIndex];
     const now = Date.now();
+    
+    stepAccumulatedRef.current = 0;
     stepStartedAtRef.current = now;
-    stepDurationRef.current = nextStep.durationSec;
+    stepOriginalDurationRef.current = nextStep.durationSec;
     setStepRemaining(nextStep.durationSec);
     
     lastBeepSecondRef.current = -1;
     
     if (soundEnabled && lastStepIndexRef.current !== nextIndex) {
       lastStepIndexRef.current = nextIndex;
-      
-      if (nextStep.kind === "WORK") {
-        beepOnce(`transition-work-${nextIndex}`, beepStartWork);
-      } else if (nextStep.kind === "REST") {
-        beepOnce(`transition-rest-${nextIndex}`, beepStartRest);
-      } else if (nextStep.kind === "COUNTDOWN") {
-        beepOnce(`transition-countdown-${nextIndex}`, beepShort);
-      }
+      if (nextStep.kind === "WORK") beepOnce(`transition-work-${nextIndex}`, beepStartWork);
+      else if (nextStep.kind === "REST") beepOnce(`transition-rest-${nextIndex}`, beepStartRest);
+      else if (nextStep.kind === "COUNTDOWN") beepOnce(`transition-countdown-${nextIndex}`, beepShort);
     }
     
     setCurrentStepIndex(nextIndex);
-  }, [currentStepIndex, steps, soundEnabled]);
+    persistCurrentState("RUNNING", nextIndex);
+  }, [currentStepIndex, steps, soundEnabled, persistCurrentState]);
 
-  const handleSkipStep = useCallback(() => {
-    goToNextStep();
-  }, [goToNextStep]);
+  const handleSkipStep = useCallback(() => goToNextStep(), [goToNextStep]);
 
   const handleFinish = useCallback(async () => {
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-    }
-    
+    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+    clearPersistedState();
     setStatus("FINISHED");
     
-    if (soundEnabled) {
-      beepFinishWorkout();
-    }
+    if (soundEnabled) beepFinishWorkout();
     
-    const finalElapsed = Math.floor(accumulatedRef.current + 
-      (status === "RUNNING" ? (Date.now() - startedAtRef.current) / 1000 : 0));
+    const now = Date.now();
+    let finalElapsedMs = totalAccumulatedRef.current;
+    if (status === "RUNNING") finalElapsedMs += now - workoutStartedAtRef.current;
+    const finalElapsed = Math.floor(finalElapsedMs / 1000);
     
     const generateLabel = (): string => {
-      if (source === "custom") {
-        return `Custom · ${routineTitle}`;
-      }
+      if (source === "custom") return `Custom · ${routineTitle}`;
       if (programKey && dayKey) {
-        const formattedDay = dayKey
-          .split("_")
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(" ");
+        const formattedDay = dayKey.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
         return `${programKey} · ${formattedDay}`;
       }
-      if (programKey) {
-        return programKey;
-      }
+      if (programKey) return programKey;
       return routineTitle || "Entrenamiento";
     };
 
     const params: FinalizeSessionParams = {
-      sessionId,
-      userId,
+      sessionId, userId,
       totalElapsedSec: finalElapsed,
       source: source || "recommended",
       label: generateLabel(),
-      programKey: programKey,
-      dayKey: dayKey,
-      systemRoutineId: systemRoutineId,
-      userRoutineId: userRoutineId,
+      programKey, dayKey, systemRoutineId, userRoutineId,
     };
 
     await finalizeWorkoutSession(params);
-  }, [sessionId, userId, status, soundEnabled, source, programKey, dayKey, systemRoutineId, userRoutineId, routineTitle]);
+  }, [sessionId, userId, status, soundEnabled, source, programKey, dayKey, systemRoutineId, userRoutineId, routineTitle, clearPersistedState]);
 
   const handleAbort = useCallback(async () => {
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-    }
-    
+    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+    clearPersistedState();
     setStatus("ABORTED");
     await updateWorkoutSession(sessionId, { status: "ABORTED" });
     navigate("/");
-  }, [sessionId, navigate]);
+  }, [sessionId, navigate, clearPersistedState]);
 
   const handleToggleSound = useCallback(async () => {
     const newValue = !soundEnabled;
     setSoundEnabledState(newValue);
-    
     try {
       await setSoundEnabled(newValue);
-      
-      // Force unlock if enabling sound (iOS PWA fix)
-      if (newValue) {
-        await forceUnlock();
-      }
-    } catch (error) {
-      console.error("[WorkoutPlayer] Toggle sound error:", error);
-    }
+      if (newValue) await forceUnlock();
+    } catch (e) { console.error(e); }
   }, [soundEnabled]);
 
-  const handleExit = useCallback(() => {
-    navigate("/");
-  }, [navigate]);
+  const handleExit = useCallback(() => navigate("/"), [navigate]);
+  const handleDismissPauseTip = () => dismissPauseTip();
 
-  const handleDismissPauseTip = () => {
-    dismissPauseTip();
-  };
+  // ============================================
+  // RENDER HELPERS
+  // ============================================
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -568,8 +679,34 @@ export default function WorkoutPlayer({
   const currentStep = steps[currentStepIndex];
   const nextStep = steps[currentStepIndex + 1];
   const progress = steps.length > 0 ? ((currentStepIndex + 1) / steps.length) * 100 : 0;
-  
   const totalWorkSteps = steps.filter(s => s.kind === "WORK").length;
+
+  // ============================================
+  // RENDER: MODAL REHIDRATACIÓN
+  // ============================================
+  if (showRehydrateModal) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.modalOverlay}>
+          <div className={styles.modal}>
+            <div className={styles.modalIcon}>⏸️</div>
+            <h3 className={styles.modalTitle}>Sesión en curso</h3>
+            <p className={styles.modalText}>
+              Detectamos un entrenamiento en progreso. ¿Deseas continuar donde lo dejaste?
+            </p>
+            <div className={styles.modalActions}>
+              <button className={styles.primaryBtn} onClick={handleContinueRehydration}>
+                Continuar
+              </button>
+              <button className={styles.dangerBtn} onClick={handleDiscardRehydration}>
+                Descartar y salir
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // ============================================
   // RENDER: WARMUP PROMPT
@@ -640,7 +777,6 @@ export default function WorkoutPlayer({
     
     return (
       <div className={styles.container}>
-        {/* Modal de Audio Unlock */}
         {showAudioModal && (
           <AudioEnableModal
             onEnable={handleAudioEnable}
@@ -670,7 +806,7 @@ export default function WorkoutPlayer({
   // ============================================
   return (
     <div className={styles.container}>
-      {/* Modal de Resume (pausado por background) */}
+      {/* Modal de Resume */}
       {showResumeModal && (
         <div className={styles.modalOverlay}>
           <div className={styles.modal}>

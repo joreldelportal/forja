@@ -34,150 +34,6 @@
 }
 
 /* ============================================
-   MODAL OVERLAY (Resume, etc.)
-   ============================================ */
-
-.modalOverlay {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(8px);
-  animation: fadeIn 0.2s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.modal {
-  width: 100%;
-  max-width: 340px;
-  padding: 32px 24px;
-  background: linear-gradient(145deg, rgba(26, 26, 46, 0.98) 0%, rgba(15, 15, 26, 1) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
-  text-align: center;
-  animation: slideUp 0.3s ease;
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.modalIcon {
-  font-size: 3rem;
-  margin-bottom: 16px;
-}
-
-.modalTitle {
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: #ffffff;
-  margin: 0 0 12px;
-}
-
-.modalText {
-  font-size: 0.95rem;
-  color: rgba(255, 255, 255, 0.6);
-  line-height: 1.5;
-  margin: 0 0 24px;
-}
-
-.modalActions {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-/* ============================================
-   TIP BANNER (one-time)
-   ============================================ */
-
-.tipBanner {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
-  background: rgba(34, 197, 94, 0.1);
-  border: 1px solid rgba(34, 197, 94, 0.25);
-  border-radius: 12px;
-  margin-bottom: 16px;
-  animation: slideIn 0.3s ease;
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.tipIcon {
-  font-size: 1.2rem;
-  flex-shrink: 0;
-}
-
-.tipText {
-  flex: 1;
-  font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.8);
-  line-height: 1.4;
-}
-
-.tipDismiss {
-  padding: 6px 12px;
-  background: rgba(34, 197, 94, 0.2);
-  border: 1px solid rgba(34, 197, 94, 0.4);
-  border-radius: 6px;
-  color: #22c55e;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: all 0.2s;
-}
-
-.tipDismiss:hover {
-  background: rgba(34, 197, 94, 0.3);
-}
-
-/* ============================================
-   SOUND WARNING
-   ============================================ */
-
-.soundWarning {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 10px 16px;
-  background: rgba(255, 170, 0, 0.1);
-  border: 1px solid rgba(255, 170, 0, 0.25);
-  border-radius: 10px;
-  color: rgba(255, 170, 0, 0.9);
-  font-size: 0.85rem;
-  margin-bottom: 16px;
-  animation: fadeIn 0.3s ease;
-}
-
-/* ============================================
    PROMPT CARD (Warmup choice)
    ============================================ */
 
@@ -475,6 +331,27 @@
   transition: width 0.3s ease;
 }
 
+/* Pause message */
+.pauseMessage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: rgba(255, 170, 0, 0.12);
+  border: 1px solid rgba(255, 170, 0, 0.3);
+  border-radius: 12px;
+  color: #ffaa00;
+  font-size: 14px;
+  margin-bottom: 20px;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* Step display */
 .stepDisplay {
   text-align: center;
@@ -769,6 +646,24 @@
   border-color: rgba(255, 255, 255, 0.3);
 }
 
+.dangerBtn {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 12px;
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dangerBtn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
 /* ============================================
    RESPONSIVE
    ============================================ */
@@ -803,25 +698,6 @@
 
   .statValue {
     font-size: 24px;
-  }
-
-  .tipBanner {
-    flex-wrap: wrap;
-  }
-
-  .tipText {
-    flex: 1 1 100%;
-    order: 2;
-    margin-top: 8px;
-  }
-
-  .tipDismiss {
-    order: 1;
-    margin-left: auto;
-  }
-
-  .tipIcon {
-    order: 0;
   }
 }
 
